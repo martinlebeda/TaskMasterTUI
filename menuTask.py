@@ -10,11 +10,11 @@ query = " | ".join(sys.argv[1:])
 def exec_task(ids, *cmd):
     args = ["tm", "tk"] + list(cmd) + ids
     print(args)
-    # sp = subprocess.run(args)
-    # if sp.returncode != 0:
-    #     print("subprocess error: ", sp.returncode)
-    #     print(sp.stderr)
-    #     exit(sp.returncode)
+    sp = subprocess.run(args)
+    if sp.returncode != 0:
+        print("subprocess error: ", sp.returncode)
+        print(sp.stderr)
+        exit(sp.returncode)
 
 
 # main loop
