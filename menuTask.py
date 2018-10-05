@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import re
-import sys
 import subprocess
+import sys
 
 query = " | ".join(sys.argv[1:])
 
@@ -17,12 +17,32 @@ def exec_task(ids, *cmd):
         exit(sp.returncode)
 
 
-# main loop
+# execute notepad
+def open_note(ids):
+    p = subprocess.Popen(["tm", "tk", "taskname", "-f", *ids], stdout=subprocess.PIPE)
+    tasknames = p.stdout.readlines()
+    p.wait()
+    for taskname in tasknames:
+        taskname = taskname.strip().decode()
+        subprocess.call(["lnch", "/home/martin/bin/poznKUkolu.sh", taskname])  # TODO Lebeda - configure
+
+
+def copy_taskname(ids):
+    """Copy taskname to clipboard"""
+    p = subprocess.Popen(["tm", "tk", "taskname", *ids], stdout=subprocess.PIPE)
+    tasknames = p.stdout.readlines()
+    p.wait()
+    tasknames_str = "".join(map(bytes.decode, tasknames))
+    p = subprocess.Popen(['xsel', '-bi'], stdin=subprocess.PIPE)
+    p.communicate(input=tasknames_str.encode())
+
+
 while True:
+    '''Main loop'''
     p1 = subprocess.Popen(["tm", "tk", "-C", "ls"], stdout=subprocess.PIPE)
     p2 = subprocess.Popen(["fzf", '--multi', '--no-sort', '--border', "--ansi",
                            '--reverse', '--print-query', '--query=' + query,
-                           '--expect=ctrl-w,f5,f8,alt-a,alt-b,alt-c,alt-l'],
+                           '--expect=ctrl-w,ctrl-p,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l'],
                           stdin=p1.stdout, stdout=subprocess.PIPE)
     p1.wait()
     lines = p2.stdout.readlines()
@@ -44,18 +64,13 @@ while True:
         continue  # only refresh
 
     ids = []
-    taskNames = []
-    taskNamesStriped = []
     for line in lines:
         taskId = re.sub(r' .*', "", line.strip().decode())
-        taskName = re.sub(r'^\d+ *', "", line.strip().decode())
-        taskNameStriped = re.sub(r'^\([A-Z]\) *', "", taskName).strip()
-        taskNameStriped = re.sub(r' [+@][^ ]+', "", taskNameStriped).strip()
+        # taskName = re.sub(r'^\d+ *', "", line.strip().decode())
+        # taskNameStriped = re.sub(r'^\([A-Z]\) *', "", taskName).strip()
+        # taskNameStriped = re.sub(r' [+@][^ ]+', "", taskNameStriped).strip()
 
         ids.append(taskId)
-        taskNames.append(taskName)
-        taskNamesStriped.append(taskNameStriped)
-
 
     if key == '':
         # print("mark done ", taskId)
@@ -73,5 +88,9 @@ while True:
         exec_task(ids, "prio", "C")
     elif key == 'alt-l':
         exec_task(ids, "prio", "-c")
+    elif key == 'ctrl-p':
+        open_note(ids)
+    elif key == 'ctrl-c':
+        copy_taskname(ids)
 
-    # exit(0) # only for debug
+    exit(0)  # only for debug
