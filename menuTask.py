@@ -37,12 +37,32 @@ def copy_taskname(ids):
     p.communicate(input=tasknames_str.encode())
 
 
+def open_url(names):
+    '''open urls from task'''
+    for name in names:
+        urls = re.findall('https*://\S+', name)
+        for url in urls:
+            subprocess.run(["chromium", url])
+
+
+def open_jira(names):
+    '''Open task in jira - proprietary MC function'''
+    for name in names:
+        jira_tasks = re.findall('MCV-\d+', name)
+        for jira_task in jira_tasks:
+            subprocess.run(["chromium", "http://mcv.marbes.cz/browse/" + jira_task])
+
+
+# only for debug functions
+# open_url(['https://www.databazeknih.cz/knihy/milenium-muz-ktery-hledal-svuj-stin-342724', 'http://github.com/tmux-plugins/tmux-open'])
+# exit(0)
+
 while True:
     '''Main loop'''
     p1 = subprocess.Popen(["tm", "tk", "-C", "ls"], stdout=subprocess.PIPE)
     p2 = subprocess.Popen(["fzf", '--multi', '--no-sort', '--border', "--ansi",
                            '--reverse', '--print-query', '--query=' + query,
-                           '--expect=ctrl-w,ctrl-p,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l'],
+                           '--expect=ctrl-w,ctrl-p,ctrl-u,ctrl-j,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l'],
                           stdin=p1.stdout, stdout=subprocess.PIPE)
     p1.wait()
     lines = p2.stdout.readlines()
@@ -64,20 +84,21 @@ while True:
         continue  # only refresh
 
     ids = []
+    names = []
     for line in lines:
         taskId = re.sub(r' .*', "", line.strip().decode())
-        # taskName = re.sub(r'^\d+ *', "", line.strip().decode())
+        taskName = re.sub(r'^\d+ *', "", line.strip().decode())
         # taskNameStriped = re.sub(r'^\([A-Z]\) *', "", taskName).strip()
         # taskNameStriped = re.sub(r' [+@][^ ]+', "", taskNameStriped).strip()
-
         ids.append(taskId)
+        names.append(taskName)
 
     if key == '':
         # print("mark done ", taskId)
         exec_task(ids, 'done')
     elif key == 'f8':
-        # print("mark defer ", taskId)
-        exec_task(ids, "defer", "--context @upřesnit")  # TODO Lebeda - konstantu za param
+        print("mark defer ", taskId)
+        exec_task(ids, "defer", "--context", "@defered")  # TODO Lebeda - konstantu za param
     elif key == 'ctrl-w':
         exec_task(ids, "work", "-w")
     elif key == 'alt-a':
@@ -92,5 +113,9 @@ while True:
         open_note(ids)
     elif key == 'ctrl-c':
         copy_taskname(ids)
+    elif key == 'ctrl-j':
+        open_jira(names)
+    elif key == 'ctrl-u':
+        open_url(names)
 
-    exit(0)  # only for debug
+    # exit(0)  # only for debug
