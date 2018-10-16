@@ -5,7 +5,8 @@ import subprocess
 import sys
 
 EDIT_FILE = '/tmp/todo.txt'
-EDITOR = os.environ.get('EDITOR','vim')
+# EDITOR = os.environ.get('EDITOR','vim')
+EDITOR = 'vim'
 
 query = " | ".join(sys.argv[1:])
 
@@ -69,7 +70,7 @@ while True:
     p1 = subprocess.Popen(["tm", "tk", "-C", "ls"], stdout=subprocess.PIPE)
     p2 = subprocess.Popen(["fzf", '--multi', '--no-sort', '--border', "--ansi",
                            '--reverse', '--print-query', '--query=' + query,
-                           '--expect=ctrl-w,ctrl-p,ctrl-u,ctrl-j,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l,f2,f4,ctrl-alt-d'],
+                           '--expect=ctrl-w,ctrl-p,ctrl-u,ctrl-j,ctrl-alt-a,ctrl-alt-b,ctrl-alt-c,ctrl-alt-d,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l,f2,f4,ctrl-alt-r'],
                           stdin=p1.stdout, stdout=subprocess.PIPE)
     p1.wait()
     lines = p2.stdout.readlines()
@@ -86,6 +87,22 @@ while True:
     key = lines[0].strip().decode()
     lines.remove(lines[0])
     print("key ", key)
+
+    if key == 'ctrl-alt-a':
+        query = '\'(A)'
+        continue  # only refresh with new query
+
+    if key == 'ctrl-alt-b':
+        query = '\'(A) | \'(B)'
+        continue  # only refresh with new query
+
+    if key == 'ctrl-alt-c':
+        query = '\'(A) | \'(B) | \'(C)'
+        continue  # only refresh with new query
+
+    if key == 'ctrl-alt-d':
+        query = '\'@defered'
+        continue  # only refresh with new query
 
     if key == 'f5':
         continue  # only refresh
@@ -109,14 +126,11 @@ while True:
         # print("mark done ", taskId)
         exec_task(ids, 'done')
     elif key == 'f8':
-        print("mark defer ", taskId)
         exec_task(ids, "defer", "--context", "@defered")  # TODO Lebeda - konstantu za param
     elif key == 'f4':
-        print("edit tasks", taskId)
         exec_task(ids, "export", EDIT_FILE)
         edit_tasks(EDIT_FILE)
-    elif key == 'ctrl-alt-d':
-        print("delete tasks", taskId)
+    elif key == 'ctrl-alt-r':
         exec_task(ids, "delete")
     elif key == 'ctrl-w':
         exec_task(ids, "work", "-w")
