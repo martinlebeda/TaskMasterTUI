@@ -10,6 +10,7 @@ EDITOR = 'vim'
 
 query = " | ".join(sys.argv[1:])
 
+
 # execute taskmaster task
 def exec_task(ids, *cmd):
     args = ["tm", "tk"] + list(cmd) + ids
@@ -46,7 +47,7 @@ def open_url(names):
     for name in names:
         urls = re.findall('https*://\S+', name)
         for url in urls:
-            subprocess.run(["chromium", url])
+            subprocess.run(["vivaldi-stable", url])  # TODO Lebeda - configure
 
 
 def open_jira(names):
@@ -54,7 +55,7 @@ def open_jira(names):
     for name in names:
         jira_tasks = re.findall('MCV-\d+', name)
         for jira_task in jira_tasks:
-            subprocess.run(["chromium", "http://mcv.marbes.cz/browse/" + jira_task])
+            subprocess.run(["vivaldi-stable", "http://mcv.marbes.cz/browse/" + jira_task])
 
 
 # only for debug functions
@@ -65,12 +66,23 @@ def edit_tasks(EDIT_FILE):
     subprocess.call([EDITOR, EDIT_FILE])
     subprocess.call(["tm", "tk", "import", EDIT_FILE])
 
+
+showMaybe = False
+
 while True:
     '''Main loop'''
-    p1 = subprocess.Popen(["tm", "tk", "-C", "ls"], stdout=subprocess.PIPE)
+
+    showMaybeParam = ""
+    if showMaybe:
+        print("maybe enabled")
+        showMaybeParam = "-m"
+
+    p1 = subprocess.Popen(["tm", "tk", "-C", "ls", showMaybeParam], stdout=subprocess.PIPE)
     p2 = subprocess.Popen(["fzf", '--multi', '--no-sort', '--border', "--ansi",
                            '--reverse', '--print-query', '--query=' + query,
-                           '--expect=ctrl-w,ctrl-p,ctrl-u,ctrl-j,ctrl-alt-a,ctrl-alt-b,ctrl-alt-c,ctrl-alt-d,ctrl-c,f5,f8,alt-a,alt-b,alt-c,alt-l,f2,f4,ctrl-alt-r'],
+                           '--expect=ctrl-w,ctrl-p,ctrl-u,ctrl-j,ctrl-alt-a,ctrl-alt-b,ctrl-alt-c,ctrl-alt-d,ctrl-c,'
+                           + 'f5,f8,alt-a,alt-b,alt-c,alt-d,alt-e,alt-l,'
+                           + 'f2,f4,ctrl-alt-r,ctrl-alt-m,alt-m,alt-n'],
                           stdin=p1.stdout, stdout=subprocess.PIPE)
     p1.wait()
     lines = p2.stdout.readlines()
@@ -107,6 +119,14 @@ while True:
     if key == 'f5':
         continue  # only refresh
 
+    if key == 'ctrl-alt-m':
+        showMaybe = not showMaybe
+        if showMaybe:
+            print("show maybe enabled")
+        else:
+            print("show maybe disabled")
+        continue
+
     if key == 'f2':
         if os.path.exists(EDIT_FILE):
             os.remove(EDIT_FILE)
@@ -140,8 +160,16 @@ while True:
         exec_task(ids, "prio", "B")
     elif key == 'alt-c':
         exec_task(ids, "prio", "C")
+    elif key == 'alt-D':
+        exec_task(ids, "prio", "D")
+    elif key == 'alt-E':
+        exec_task(ids, "prio", "E")
     elif key == 'alt-l':
         exec_task(ids, "prio", "-c")
+    elif key == 'alt-n':
+        exec_task(ids, "normal")
+    elif key == 'alt-m':
+        exec_task(ids, "maybe")
     elif key == 'ctrl-p':
         open_note(ids)
     elif key == 'ctrl-c':
